@@ -1,0 +1,80 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Export All (Local)",
+      "type": "shell",
+      "command": "npx ion-cicd export --all --local",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Export All from Environment",
+      "type": "shell",
+      "command": "npx ion-cicd --env ${input:environment} export --all --local",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Deploy to Environment",
+      "type": "shell",
+      "command": "npx ion-cicd --env ${input:environment} deploy",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Push All to Environment",
+      "type": "shell",
+      "command": "npx ion-cicd --env ${input:environment} push",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Validate Components",
+      "type": "shell",
+      "command": "npx ion-cicd validate --all",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backup Production",
+      "type": "shell",
+      "command": "npx ion-cicd --env prd export --all --local --prune",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "environment",
+      "type": "pickString",
+      "description": "Select target environment",
+      "options": ["tst", "trn", "prd"],
+      "default": "tst"
+    }
+  ]
+}
