@@ -1,5 +1,5 @@
 # Deploy to TEST Workflow
-# Copy this file to your project's .github/workflows/ directory
+# Deploys changed ION components to TEST environment on PR
 
 name: Deploy to TEST
 
@@ -13,17 +13,59 @@ on:
   workflow_dispatch:
     inputs:
       component-types:
-        description: 'Component types to deploy (comma-separated, or leave empty for changed files)'
+        description: 'Component types to deploy (comma-separated, or leave empty for all)'
         required: false
         type: string
 
+env:
+  NODE_VERSION: '20'
+
 jobs:
   deploy:
-    uses: mikah/ion-cicd/.github/workflows/reusable/deploy-test.yml@v1
-    with:
-      component-types: ${{ inputs.component-types || '' }}
-      # Optional: customize these
-      # components-path: ion-components
-      # auto-approve-scripts: true
-    secrets:
-      IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_TST }}
+    name: Deploy to TEST
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to TEST
+        env:
+          IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_TST }}
+        run: |
+          TYPE_FLAG=""
+          if [ -n "${{ inputs.component-types }}" ]; then
+            TYPE_FLAG="--type ${{ inputs.component-types }}"
+          fi
+
+          npx ion-cicd --env tst deploy --ci --auto-approve $TYPE_FLAG
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✅ **Deployed to TEST**\n\n- Run ID: ${{ github.run_id }}'
+            });
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Deploy to TEST Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Component Types:** ${{ inputs.component-types || 'all changed' }}" >> $GITHUB_STEP_SUMMARY

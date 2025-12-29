@@ -138,41 +138,13 @@ npx ion-cicd --env tst deploy --type Script
 
 ## GitHub Actions Integration
 
-### Reusable Workflows
+### Workflow Templates
 
-This package includes reusable workflows for CI/CD automation:
+Copy the workflow templates from `templates/workflows/` to your project's `.github/workflows/` directory:
 
-**Daily Backup** - `.github/workflows/reusable/backup.yml`
-```yaml
-jobs:
-  backup:
-    uses: MikahDev/ion-cicd/.github/workflows/reusable/backup.yml@v1
-    with:
-      environment: prd
-      target-branch: Production
-    secrets:
-      IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_PRD }}
-```
-
-**Deploy to TEST** - `.github/workflows/reusable/deploy-test.yml`
-```yaml
-jobs:
-  deploy:
-    uses: MikahDev/ion-cicd/.github/workflows/reusable/deploy-test.yml@v1
-    secrets:
-      IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_TST }}
-```
-
-**Deploy to PRODUCTION** - `.github/workflows/reusable/deploy-production.yml`
-```yaml
-jobs:
-  deploy:
-    uses: MikahDev/ion-cicd/.github/workflows/reusable/deploy-production.yml@v1
-    with:
-      skip-backup: false
-    secrets:
-      IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_PRD }}
-```
+- `backup.yml` - Daily automated backup from Production
+- `deploy-test.yml` - Deploy to TEST on pull request
+- `deploy-production.yml` - Deploy to PRODUCTION on release
 
 ### Setting Up Secrets
 

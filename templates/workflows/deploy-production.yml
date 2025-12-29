@@ -1,5 +1,5 @@
 # Deploy to PRODUCTION Workflow
-# Copy this file to your project's .github/workflows/ directory
+# Deploys ION components to PRODUCTION with pre-deployment backup
 
 name: Deploy to PRODUCTION
 
@@ -25,14 +25,126 @@ on:
         type: boolean
         default: false
 
+env:
+  NODE_VERSION: '20'
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
+  backup:
+    name: Pre-deployment Backup
+    if: inputs.skip-backup != true
+    runs-on: ubuntu-latest
+    outputs:
+      backup-branch: ${{ steps.backup.outputs.branch_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create backup branch
+        id: backup
+        run: |
+          BRANCH_NAME="backup/pre-deploy-$(date +%Y%m%d-%H%M%S)"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
+          git checkout -b $BRANCH_NAME
+
+      - name: Export current production state
+        env:
+          IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_PRD }}
+        run: npx ion-cicd --env prd export --all --local
+
+      - name: Commit and push backup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ion-components/
+          if ! git diff --staged --quiet; then
+            git commit -m "backup: Pre-deployment snapshot"
+            git push origin ${{ env.branch_name }}
+            echo "✅ Backup branch created: ${{ env.branch_name }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ No changes to backup" >> $GITHUB_STEP_SUMMARY
+          fi
+
   deploy:
-    uses: mikah/ion-cicd/.github/workflows/reusable/deploy-production.yml@v1
-    with:
-      component-types: ${{ inputs.component-types || '' }}
-      dry-run: ${{ inputs.dry-run || false }}
-      skip-backup: ${{ inputs.skip-backup || false }}
-      # Optional: customize these
-      # components-path: ion-components
-    secrets:
-      IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_PRD }}
+    name: Deploy to PRODUCTION
+    needs: [backup]
+    if: always() && (needs.backup.result == 'success' || needs.backup.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to Production
+        env:
+          IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_PRD }}
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "${{ inputs.dry-run }}" == "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          TYPE_FLAG=""
+          if [ -n "${{ inputs.component-types }}" ]; then
+            TYPE_FLAG="--type ${{ inputs.component-types }}"
+          fi
+
+          npx ion-cicd --env prd deploy --ci $DRY_RUN_FLAG $TYPE_FLAG
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "## ✅ Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Component Types:** ${{ inputs.component-types || 'all' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run:** ${{ inputs.dry-run }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.skip-backup }}" != "true" ]; then
+            echo "- **Backup Branch:** ${{ needs.backup.outputs.backup-branch }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Rollback Instructions
+        if: failure()
+        run: |
+          echo "## ⚠️ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Rollback Instructions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.skip-backup }}" != "true" ]; then
+            echo "A pre-deployment backup was created. To rollback:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "git checkout ${{ needs.backup.outputs.backup-branch }}" >> $GITHUB_STEP_SUMMARY
+            echo "npx ion-cicd --env prd deploy --ci" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No backup was created (skip-backup was true)" >> $GITHUB_STEP_SUMMARY
+          fi
