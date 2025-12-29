@@ -12,6 +12,6 @@
     "push": "ion-cicd push"
   },
   "dependencies": {
-    "@mikah/ion-cicd": "^1.0.0"
+    "@mikahdev/ion-cicd": "^1.0.0"
   }
 }

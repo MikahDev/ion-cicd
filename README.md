@@ -33,10 +33,10 @@ CLI toolkit for managing Infor ION components with Git-based version control and
 
 ```bash
 # Configure npm for GitHub Packages
-echo "@mikah:registry=https://npm.pkg.github.com" >> .npmrc
+echo "@mikahdev:registry=https://npm.pkg.github.com" >> .npmrc
 
 # Install
-npm install @mikah/ion-cicd
+npm install @mikahdev/ion-cicd
 ```
 
 ### From Source
@@ -58,7 +58,7 @@ Create a new directory for your ION components:
 ```bash
 mkdir my-ion-project && cd my-ion-project
 npm init -y
-npm install @mikah/ion-cicd
+npm install @mikahdev/ion-cicd
 ```
 
 ### 2. Configure Environments
