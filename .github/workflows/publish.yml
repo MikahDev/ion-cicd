@@ -1,4 +1,4 @@
-# Publish Package to GitHub Packages
+# Publish Package to npmjs.com
 # Triggered on release creation
 
 name: Publish Package
@@ -18,11 +18,8 @@ on:
 
 jobs:
   publish:
-    name: Publish to GitHub Packages
+    name: Publish to npm
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Checkout
@@ -32,8 +29,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@mikahdev'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
@@ -49,23 +45,23 @@ jobs:
         if: github.event.inputs.dry-run == 'true'
         run: npm publish --dry-run
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish
         if: github.event.inputs.dry-run != 'true'
-        run: npm publish
+        run: npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Summary
         run: |
           echo "## 📦 Package Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package:** @mikahdev/ion-cicd" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package:** ion-cicd" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** $(node -p "require('./package.json').version")" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry:** GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** npmjs.com" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Installation" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo 'npm install @mikahdev/ion-cicd' >> $GITHUB_STEP_SUMMARY
+          echo 'npm install ion-cicd' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

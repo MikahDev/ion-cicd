@@ -1,5 +1,5 @@
 {
-  "name": "@mikahdev/ion-cicd",
+  "name": "ion-cicd",
   "version": "1.0.0",
   "description": "Infor ION CI/CD Toolkit - Automated backup and deployment for ION components",
   "type": "module",
@@ -11,9 +11,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/MikahDev/ion-cicd.git"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   },
   "files": [
     "dist",
