@@ -1,0 +1,763 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "This swagger contains details of github apis .",
+    "version": "1.0.0",
+    "title": "Github",
+    "termsOfService": "http://swagger.io/terms/",
+    "contact": {
+      "email": "apiteam@swagger.io"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "host": "mingle-ionapi.inforcloudsuite.com",
+  "basePath": "/MANDALA_DEM/CustomerApi/GitHubAPI/github",
+  "tags": [
+    {
+      "name": "user",
+      "description": "Operations about user",
+      "externalDocs": {
+        "description": "Find out more about our store",
+        "url": "http://swagger.io"
+      }
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "security": [
+    {
+      "KeyName": []
+    },
+    {
+      "KeyValue": []
+    }
+  ],
+  "paths": {
+    "/user/repos": {
+      "get": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "repositories for the authenticated user",
+        "description": "Lists repositories that the authenticated user has explicit permission (:read, :write, or :admin) to access.\nThe authenticated user has explicit permission to access repositories they own, repositories where they are a collaborator, and repositories that they can access through an organization membership",
+        "operationId": "Getrepo",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "Creates a new repository for the authenticated user.",
+        "description": "When using OAuth, authorizations must include\n1.public_repo scope or repo scope to create a public repository. Note For GitHub AE, use repo scope to create an internal repository. 2.repo scope to create a private repository.",
+        "operationId": "Postrepo",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "requestbody",
+            "description": "create repo by user.",
+            "schema": {
+              "type": "object",
+              "required": [
+                "name",
+                "description",
+                "homepage",
+                "private"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "homepage": {
+                  "type": "string"
+                },
+                "private": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get the authenticated user",
+        "description": "If the authenticated user is authenticated through basic authentication or OAuth with the user scope, then the response lists public and private profile information.\nIf the authenticated user is authenticated through OAuth without the user scope, then the response lists only public profile information.",
+        "operationId": "getUser",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/userdetails"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/branches": {
+      "get": {
+        "tags": [
+          "Branch"
+        ],
+        "summary": "List branches",
+        "description": "The Branches API allows you to get list of branches",
+        "operationId": "getbranch",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "github username ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": " name of the repository ",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Repo"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents/{path}": {
+      "get": {
+        "tags": [
+          "Contents"
+        ],
+        "summary": "Get repository content",
+        "description": "Gets the contents of a file or directory in a repository. Specify the file path or   directory in path.",
+        "operationId": "getcontents",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "user name of github",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": "name of the repository",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "description": "file name which you need to get ",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/contentsget"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Contents"
+        ],
+        "summary": "Create or update file contents",
+        "description": "Creates a new file or replaces an existing file in a repository.",
+        "operationId": "putcontents",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "user name of github ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": "name of the repository ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "description": "name of the filename ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "responsebody",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": [
+                "message",
+                "content",
+                "branch"
+              ],
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/contentsput"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/git/trees/{branch}": {
+      "get": {
+        "tags": [
+          "Tree"
+        ],
+        "summary": "Get a tree",
+        "description": "Returns a single tree using the SHA1 value for that tree.\nIf truncated is true in the response then the number of items in the tree array exceeded our maximum limit. If you need to fetch more items, use the non-recursive method of fetching trees, and fetch one sub-tree at a time.",
+        "operationId": "gettree",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "Tuser name of github ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": "name of the repo ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "description": "branch name of the repo",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "recursive",
+            "in": "query",
+            "description": "recursive Depth",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/tree"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "KeyName": {
+      "type": "apiKey",
+      "name": "Key Name",
+      "in": "header"
+    },
+    "KeyValue": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "Key Value"
+    }
+  },
+  "definitions": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        }
+      }
+    },
+    "Repo": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        }
+      }
+    },
+    "contentsget": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "encoding": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "sha": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "git_url": {
+          "type": "string"
+        },
+        "html_url": {
+          "type": "string"
+        },
+        "download_url": {
+          "type": "string"
+        },
+        "_links": {
+          "type": "object",
+          "properties": {
+            "git": {
+              "type": "string"
+            },
+            "self": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "git",
+            "self",
+            "html"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "encoding",
+        "size",
+        "name",
+        "path",
+        "content",
+        "sha",
+        "url",
+        "git_url",
+        "html_url",
+        "download_url",
+        "_links"
+      ]
+    },
+    "tree": {
+      "type": "object",
+      "properties": {
+        "sha": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "sha",
+        "url",
+        "tree",
+        "truncated"
+      ]
+    },
+    "userdetails": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        },
+        "gravatar_id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "html_url": {
+          "type": "string"
+        },
+        "followers_url": {
+          "type": "string"
+        },
+        "following_url": {
+          "type": "string"
+        },
+        "gists_url": {
+          "type": "string"
+        },
+        "starred_url": {
+          "type": "string"
+        },
+        "subscriptions_url": {
+          "type": "string"
+        },
+        "organizations_url": {
+          "type": "string"
+        },
+        "repos_url": {
+          "type": "string"
+        },
+        "events_url": {
+          "type": "string"
+        },
+        "received_events_url": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "site_admin": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "blog": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "hireable": {
+          "type": "boolean"
+        },
+        "bio": {
+          "type": "string"
+        },
+        "twitter_username": {
+          "type": "string"
+        },
+        "public_repos": {
+          "type": "integer"
+        },
+        "public_gists": {
+          "type": "integer"
+        },
+        "followers": {
+          "type": "integer"
+        },
+        "following": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "private_gists": {
+          "type": "integer"
+        },
+        "total_private_repos": {
+          "type": "integer"
+        },
+        "owned_private_repos": {
+          "type": "integer"
+        },
+        "disk_usage": {
+          "type": "integer"
+        },
+        "collaborators": {
+          "type": "integer"
+        },
+        "two_factor_authentication": {
+          "type": "boolean"
+        },
+        "plan": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "space": {
+              "type": "integer"
+            },
+            "private_repos": {
+              "type": "integer"
+            },
+            "collaborators": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "name",
+            "space",
+            "private_repos",
+            "collaborators"
+          ]
+        }
+      },
+      "required": [
+        "login",
+        "id",
+        "node_id",
+        "avatar_url",
+        "gravatar_id",
+        "url",
+        "html_url",
+        "followers_url",
+        "following_url",
+        "gists_url",
+        "starred_url",
+        "subscriptions_url",
+        "organizations_url",
+        "repos_url",
+        "events_url",
+        "received_events_url",
+        "type",
+        "site_admin",
+        "name",
+        "company",
+        "blog",
+        "location",
+        "email",
+        "hireable",
+        "bio",
+        "twitter_username",
+        "public_repos",
+        "public_gists",
+        "followers",
+        "following",
+        "created_at",
+        "updated_at",
+        "private_gists",
+        "total_private_repos",
+        "owned_private_repos",
+        "disk_usage",
+        "collaborators",
+        "two_factor_authentication",
+        "plan"
+      ]
+    },
+    "contentsput": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "sha": {
+              "type": "string"
+            },
+            "size": {
+              "type": "integer"
+            },
+            "url": {
+              "type": "string"
+            },
+            "html_url": {
+              "type": "string"
+            },
+            "git_url": {
+              "type": "string"
+            },
+            "download_url": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "_links": {
+              "type": "object",
+              "properties": {
+                "self": {
+                  "type": "string"
+                },
+                "git": {
+                  "type": "string"
+                },
+                "html": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "self",
+                "git",
+                "html"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "path",
+            "sha",
+            "size",
+            "url",
+            "html_url",
+            "git_url",
+            "download_url",
+            "type",
+            "_links"
+          ]
+        }
+      }
+    }
+  }
+}

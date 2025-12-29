@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Deploy to ION",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "if [[ \"${file}\" == *\"Document flow\"* ]]; then node \"${workspaceFolder}/dist/cli.js\" deploy --file \"${file}\" --with-dependencies --sync-dependencies; else node \"${workspaceFolder}/dist/cli.js\" deploy --file \"${file}\"; fi"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Deploy to ION (Dry Run)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "if [[ \"${file}\" == *\"Document flow\"* ]]; then node \"${workspaceFolder}/dist/cli.js\" deploy --file \"${file}\" --with-dependencies --sync-dependencies --dry-run; else node \"${workspaceFolder}/dist/cli.js\" deploy --file \"${file}\" --dry-run; fi"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "focus": true
+      },
+      "group": "build"
+    }
+  ]
+}

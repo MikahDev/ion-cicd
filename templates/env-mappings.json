@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "description": "Environment mappings for environment refresh operations",
+  "environments": {
+    "prd": {
+      "identifier": "your-prd-id",
+      "displayName": "Production"
+    },
+    "trn": {
+      "identifier": "your-trn-id",
+      "displayName": "Training"
+    },
+    "tst": {
+      "identifier": "your-tst-id",
+      "displayName": "Test"
+    }
+  },
+  "connectionPoints": {
+    "patterns": [
+      {
+        "field": "documentGroups.*.documents.*.documentProperties.*.value",
+        "pattern": "^Production/",
+        "replacement": "Training/",
+        "description": "Update file paths from Production/ to Training/"
+      }
+    ],
+    "substitutions": {},
+    "removeFields": [
+      "runtimeProcessId",
+      "lastUpdatedBy",
+      "lastUpdatedOn"
+    ],
+    "credentialPlaceholder": "{{CREDENTIAL_REQUIRED}}"
+  },
+  "enterpriseConnectors": {
+    "patterns": [],
+    "substitutions": {}
+  },
+  "scripts": {
+    "detectionPatterns": [],
+    "defaultSubstitutions": {}
+  }
+}

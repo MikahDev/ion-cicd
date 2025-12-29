@@ -1,0 +1,38 @@
+# Deploy to PRODUCTION Workflow
+# Copy this file to your project's .github/workflows/ directory
+
+name: Deploy to PRODUCTION
+
+on:
+  release:
+    types: [published]
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      component-types:
+        description: 'Component types to deploy (comma-separated, or leave empty for all)'
+        required: false
+        type: string
+      dry-run:
+        description: 'Preview only (do not deploy)'
+        required: false
+        type: boolean
+        default: false
+      skip-backup:
+        description: 'Skip pre-deployment backup (not recommended)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    uses: mikah/ion-cicd/.github/workflows/reusable/deploy-production.yml@v1
+    with:
+      component-types: ${{ inputs.component-types || '' }}
+      dry-run: ${{ inputs.dry-run || false }}
+      skip-backup: ${{ inputs.skip-backup || false }}
+      # Optional: customize these
+      # components-path: ion-components
+    secrets:
+      IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_PRD }}

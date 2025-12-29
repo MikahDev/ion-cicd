@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output - keep dist/ for CLI to work
+# dist/
+
+# Test coverage
+coverage/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/tasks.json
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials - NEVER commit these
+credentials/*
+!credentials/.gitkeep
+*.ionapi
+ionapi.json
+
+# State files
+.infor-cicd/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp

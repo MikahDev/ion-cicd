@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "defaultEnvironment": "tst",
+  "environments": {
+    "tst": {
+      "ionapi": "./credentials/TST.ionapi",
+      "repository": "your-org/your-repo",
+      "branch": "develop",
+      "displayName": "Test",
+      "protected": false
+    },
+    "trn": {
+      "ionapi": "./credentials/TRN.ionapi",
+      "repository": "your-org/your-repo",
+      "branch": "staging",
+      "displayName": "Training",
+      "protected": false
+    },
+    "prd": {
+      "ionapi": "./credentials/PRD.ionapi",
+      "repository": "your-org/your-repo",
+      "branch": "Production",
+      "displayName": "Production",
+      "protected": true
+    }
+  },
+  "settings": {
+    "retryAttempts": 3,
+    "retryDelayMs": 1000,
+    "tokenRefreshBufferSeconds": 300,
+    "stateDirectory": ".infor-cicd",
+    "logLevel": "info",
+    "componentsPath": "./ion-components"
+  }
+}

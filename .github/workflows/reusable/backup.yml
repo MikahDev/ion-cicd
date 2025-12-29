@@ -1,0 +1,135 @@
+# Reusable Backup Workflow
+# Called by project repos to backup ION components to Git
+
+name: Reusable Backup
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to backup (tst, trn, prd)'
+        required: true
+        type: string
+        default: 'prd'
+      target-branch:
+        description: 'Branch to merge backup into'
+        required: true
+        type: string
+        default: 'Production'
+      components-path:
+        description: 'Path to ion-components directory'
+        required: false
+        type: string
+        default: 'ion-components'
+      node-version:
+        description: 'Node.js version'
+        required: false
+        type: string
+        default: '20'
+      auto-merge:
+        description: 'Automatically merge backup PR'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      IONAPI_CONFIG:
+        required: true
+        description: 'Base64 encoded .ionapi file contents'
+
+env:
+  NODE_VERSION: ${{ inputs.node-version }}
+
+jobs:
+  backup:
+    name: Backup ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create backup branch
+        run: |
+          BRANCH_NAME="backup/${{ inputs.environment }}-$(date +%Y%m%d-%H%M%S)"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
+          git checkout -b $BRANCH_NAME
+
+      - name: Export components from ION
+        env:
+          IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG }}
+        run: npx ion-cicd --env ${{ inputs.environment }} export --all --local --prune
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add ${{ inputs.components-path }}/
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            CHANGED_FILES=$(git diff --staged --name-only | wc -l | tr -d ' ')
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "backup: Auto-backup from ${{ inputs.environment }}"
+          git push origin ${{ env.branch_name }}
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        id: create_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Backup: ${new Date().toISOString().split('T')[0]} - ${process.env.changed_files} file(s)`,
+              head: process.env.branch_name,
+              base: '${{ inputs.target-branch }}',
+              body: `## Automated Backup from ${{ inputs.environment }}\n\n- **Files changed:** ${process.env.changed_files}\n- **Run ID:** ${{ github.run_id }}\n\nAuto-merges if no conflicts.`
+            });
+            return pr.number;
+        env:
+          changed_files: ${{ steps.changes.outputs.changed_files }}
+          branch_name: ${{ env.branch_name }}
+
+      - name: Auto-merge PR
+        if: steps.changes.outputs.has_changes == 'true' && inputs.auto-merge
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: ${{ steps.create_pr.outputs.result }},
+              merge_method: 'squash'
+            });
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Backup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target Branch:** ${{ inputs.target-branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Changes:** ${{ steps.changes.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.changes.outputs.has_changes }}" == "true" ]; then
+            echo "- **Files:** ${{ steps.changes.outputs.changed_files }}" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+/**
+ * ION CI/CD Toolkit CLI Executable
+ * This file is the entry point for the 'ion-cicd' command
+ */
+
+import '../dist/cli.js';

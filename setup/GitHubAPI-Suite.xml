@@ -1,0 +1,851 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ionapiSuites>
+  <ionapiSuite>
+    <suiteName>GitHubAPI</suiteName>
+    <suiteDescription>GitHub</suiteDescription>
+    <applicationName>GitHubAPI</applicationName>
+    <context>GitHubAPI</context>
+    <suiteType>NonInfor</suiteType>
+    <suiteIcon>
+      <SuiteIconImageGuid>a8347f08-b351-4aca-a5ba-207dc5d50875</SuiteIconImageGuid>
+      <SuiteIconImageBase64>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</SuiteIconImageBase64>
+    </suiteIcon>
+    <proxyProfiles>
+      <proxyProfile>
+        <proxyEndpoints>
+          <proxyEndpoint>
+            <proxyEndpointURL>github</proxyEndpointURL>
+            <proxyAuthenticationType>OAuth2</proxyAuthenticationType>
+            <targetEndpoint>
+              <targetEndpointURL>https://api.github.com</targetEndpointURL>
+              <ignoreCertError>false</ignoreCertError>
+            </targetEndpoint>
+            <documentation>
+              <targetDocumentationName>Swagger</targetDocumentationName>
+              <targetDocumentationType>SWAGGERDATA</targetDocumentationType>
+              <targetDocumentationURL>{
+  "swagger": "2.0",
+  "info": {
+    "description": "This swagger contains details of github apis .",
+    "version": "1.0.0",
+    "title": "Github",
+    "termsOfService": "http://swagger.io/terms/",
+    "contact": {
+      "email": "apiteam@swagger.io"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "host": "mingle-ionapi.inforcloudsuite.com",
+  "basePath": "/MANDALA_DEM/CustomerApi/GitHubAPI/github",
+  "tags": [
+    {
+      "name": "user",
+      "description": "Operations about user",
+      "externalDocs": {
+        "description": "Find out more about our store",
+        "url": "http://swagger.io"
+      }
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "security": [
+    {
+      "KeyName": []
+    },
+    {
+      "KeyValue": []
+    }
+  ],
+  "paths": {
+    "/user/repos": {
+      "get": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "repositories for the authenticated user",
+        "description": "Lists repositories that the authenticated user has explicit permission (:read, :write, or :admin) to access.\nThe authenticated user has explicit permission to access repositories they own, repositories where they are a collaborator, and repositories that they can access through an organization membership",
+        "operationId": "Getrepo",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "Creates a new repository for the authenticated user.",
+        "description": "When using OAuth, authorizations must include\n1.public_repo scope or repo scope to create a public repository. Note For GitHub AE, use repo scope to create an internal repository. 2.repo scope to create a private repository.",
+        "operationId": "Postrepo",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "requestbody",
+            "description": "create repo by user.",
+            "schema": {
+              "type": "object",
+              "required": [
+                "name",
+                "description",
+                "homepage",
+                "private"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "homepage": {
+                  "type": "string"
+                },
+                "private": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get the authenticated user",
+        "description": "If the authenticated user is authenticated through basic authentication or OAuth with the user scope, then the response lists public and private profile information.\nIf the authenticated user is authenticated through OAuth without the user scope, then the response lists only public profile information.",
+        "operationId": "getUser",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/userdetails"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/branches": {
+      "get": {
+        "tags": [
+          "Branch"
+        ],
+        "summary": "List branches",
+        "description": "The Branches API allows you to get list of branches",
+        "operationId": "getbranch",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "github username ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": " name of the repository ",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Repo"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents/{path}": {
+      "get": {
+        "tags": [
+          "Contents"
+        ],
+        "summary": "Get repository content",
+        "description": "Gets the contents of a file or directory in a repository. Specify the file path or   directory in path.",
+        "operationId": "getcontents",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "user name of github",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": "name of the repository",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "description": "file name which you need to get ",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/contentsget"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Contents"
+        ],
+        "summary": "Create or update file contents",
+        "description": "Creates a new file or replaces an existing file in a repository.",
+        "operationId": "putcontents",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "user name of github ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": "name of the repository ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "description": "name of the filename ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "responsebody",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": [
+                "message",
+                "content",
+                "branch"
+              ],
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/contentsput"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/git/trees/{branch}": {
+      "get": {
+        "tags": [
+          "Tree"
+        ],
+        "summary": "Get a tree",
+        "description": "Returns a single tree using the SHA1 value for that tree.\nIf truncated is true in the response then the number of items in the tree array exceeded our maximum limit. If you need to fetch more items, use the non-recursive method of fetching trees, and fetch one sub-tree at a time.",
+        "operationId": "gettree",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "Tuser name of github ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "description": "name of the repo ",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "in": "path",
+            "description": "branch name of the repo",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "recursive",
+            "in": "query",
+            "description": "recursive Depth",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/tree"
+            }
+          },
+          "400": {
+            "description": "Invalid username supplied"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "KeyName": {
+      "type": "apiKey",
+      "name": "Key Name",
+      "in": "header"
+    },
+    "KeyValue": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "Key Value"
+    }
+  },
+  "definitions": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        }
+      }
+    },
+    "Repo": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        }
+      }
+    },
+    "contentsget": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "encoding": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "sha": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "git_url": {
+          "type": "string"
+        },
+        "html_url": {
+          "type": "string"
+        },
+        "download_url": {
+          "type": "string"
+        },
+        "_links": {
+          "type": "object",
+          "properties": {
+            "git": {
+              "type": "string"
+            },
+            "self": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "git",
+            "self",
+            "html"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "encoding",
+        "size",
+        "name",
+        "path",
+        "content",
+        "sha",
+        "url",
+        "git_url",
+        "html_url",
+        "download_url",
+        "_links"
+      ]
+    },
+    "tree": {
+      "type": "object",
+      "properties": {
+        "sha": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "sha",
+        "url",
+        "tree",
+        "truncated"
+      ]
+    },
+    "userdetails": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "avatar_url": {
+          "type": "string"
+        },
+        "gravatar_id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "html_url": {
+          "type": "string"
+        },
+        "followers_url": {
+          "type": "string"
+        },
+        "following_url": {
+          "type": "string"
+        },
+        "gists_url": {
+          "type": "string"
+        },
+        "starred_url": {
+          "type": "string"
+        },
+        "subscriptions_url": {
+          "type": "string"
+        },
+        "organizations_url": {
+          "type": "string"
+        },
+        "repos_url": {
+          "type": "string"
+        },
+        "events_url": {
+          "type": "string"
+        },
+        "received_events_url": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "site_admin": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "blog": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "hireable": {
+          "type": "boolean"
+        },
+        "bio": {
+          "type": "string"
+        },
+        "twitter_username": {
+          "type": "string"
+        },
+        "public_repos": {
+          "type": "integer"
+        },
+        "public_gists": {
+          "type": "integer"
+        },
+        "followers": {
+          "type": "integer"
+        },
+        "following": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "private_gists": {
+          "type": "integer"
+        },
+        "total_private_repos": {
+          "type": "integer"
+        },
+        "owned_private_repos": {
+          "type": "integer"
+        },
+        "disk_usage": {
+          "type": "integer"
+        },
+        "collaborators": {
+          "type": "integer"
+        },
+        "two_factor_authentication": {
+          "type": "boolean"
+        },
+        "plan": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "space": {
+              "type": "integer"
+            },
+            "private_repos": {
+              "type": "integer"
+            },
+            "collaborators": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "name",
+            "space",
+            "private_repos",
+            "collaborators"
+          ]
+        }
+      },
+      "required": [
+        "login",
+        "id",
+        "node_id",
+        "avatar_url",
+        "gravatar_id",
+        "url",
+        "html_url",
+        "followers_url",
+        "following_url",
+        "gists_url",
+        "starred_url",
+        "subscriptions_url",
+        "organizations_url",
+        "repos_url",
+        "events_url",
+        "received_events_url",
+        "type",
+        "site_admin",
+        "name",
+        "company",
+        "blog",
+        "location",
+        "email",
+        "hireable",
+        "bio",
+        "twitter_username",
+        "public_repos",
+        "public_gists",
+        "followers",
+        "following",
+        "created_at",
+        "updated_at",
+        "private_gists",
+        "total_private_repos",
+        "owned_private_repos",
+        "disk_usage",
+        "collaborators",
+        "two_factor_authentication",
+        "plan"
+      ]
+    },
+    "contentsput": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "sha": {
+              "type": "string"
+            },
+            "size": {
+              "type": "integer"
+            },
+            "url": {
+              "type": "string"
+            },
+            "html_url": {
+              "type": "string"
+            },
+            "git_url": {
+              "type": "string"
+            },
+            "download_url": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "_links": {
+              "type": "object",
+              "properties": {
+                "self": {
+                  "type": "string"
+                },
+                "git": {
+                  "type": "string"
+                },
+                "html": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "self",
+                "git",
+                "html"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "path",
+            "sha",
+            "size",
+            "url",
+            "html_url",
+            "git_url",
+            "download_url",
+            "type",
+            "_links"
+          ]
+        }
+      }
+    }
+  }
+}</targetDocumentationURL>
+            </documentation>
+          </proxyEndpoint>
+        </proxyEndpoints>
+        <targetEndpointSecurity>
+          <targetEndpointOAuth20Auth>
+            <OAuth2TokenEndPoint>REPLACE_MANDATORY_VALUE</OAuth2TokenEndPoint>
+            <OAuth2RevokeEndPoint>REPLACE_OPTIONAL_VALUE</OAuth2RevokeEndPoint>
+            <authorizationCodeGrant>
+              <OAuth2ACClientId>REPLACE_MANDATORY_VALUE</OAuth2ACClientId>
+              <OAuth2ACClientSecret>REPLACE_OPTIONAL_VALUE</OAuth2ACClientSecret>
+              <OAuth2ACCredentialsLocation>REPLACE_MANDATORY_VALUE</OAuth2ACCredentialsLocation>
+              <OAuth2ACScope>REPLACE_OPTIONAL_VALUE</OAuth2ACScope>
+              <OAuth2ACAuthEndPoint>REPLACE_MANDATORY_VALUE</OAuth2ACAuthEndPoint>
+              <OAuth2ACRedirectUrl>REPLACE_OPTIONAL_VALUE</OAuth2ACRedirectUrl>
+              <OAuth2ACIsUserLevel>true</OAuth2ACIsUserLevel>
+              <RequirePKCE>false</RequirePKCE>
+              <KeyItemList />
+            </authorizationCodeGrant>
+            <VersionNo>1.0</VersionNo>
+          </targetEndpointOAuth20Auth>
+        </targetEndpointSecurity>
+        <proxyPolicyProfiles>
+          <proxyPolicyProfile>
+            <policyName>AcceptHeader</policyName>
+            <policyData>&lt;header
+    xmlns="http://www.infor.com/ion/api"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       name="header-example" displayName="header-example" enabled="true"  version="1.0"&gt;
+    &lt;action&gt;set&lt;/action&gt;
+    &lt;headerName&gt;accept&lt;/headerName&gt;
+    &lt;headerValue ref="application/json"&gt;&lt;/headerValue&gt;
+&lt;/header&gt;</policyData>
+            <policayCategory>2</policayCategory>
+            <policyFlow>1</policyFlow>
+            <policyScope>3</policyScope>
+            <policyTypeId>8</policyTypeId>
+            <policyTypeName>Header</policyTypeName>
+            <policyVersion>1.0</policyVersion>
+          </proxyPolicyProfile>
+        </proxyPolicyProfiles>
+      </proxyProfile>
+    </proxyProfiles>
+    <suitePolicyProfiles>
+      <suitePolicyProfile>
+        <policyName>AcceptHeader</policyName>
+        <policyData>&lt;header
+    xmlns="http://www.infor.com/ion/api"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       name="header-example" displayName="header-example" enabled="true"  version="1.0"&gt;
+    &lt;action&gt;set&lt;/action&gt;
+    &lt;headerName&gt;Accept&lt;/headerName&gt;
+    &lt;headerValue&gt;application/json&lt;/headerValue&gt;
+&lt;/header&gt;</policyData>
+        <policayCategory>2</policayCategory>
+        <policyFlow>1</policyFlow>
+        <policyScope>5</policyScope>
+        <policyTypeId>8</policyTypeId>
+        <policyTypeName>Header</policyTypeName>
+        <policyVersion>1.0</policyVersion>
+      </suitePolicyProfile>
+    </suitePolicyProfiles>
+  </ionapiSuite>
+</ionapiSuites>

@@ -1,0 +1,17 @@
+{
+  "name": "my-ion-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ION components for My Project",
+  "scripts": {
+    "export": "ion-cicd export",
+    "export:all": "ion-cicd export --all --local",
+    "deploy": "ion-cicd deploy",
+    "deploy:validate": "ion-cicd validate",
+    "backup": "ion-cicd --env prd export --all --local --prune",
+    "push": "ion-cicd push"
+  },
+  "dependencies": {
+    "@mikah/ion-cicd": "^1.0.0"
+  }
+}

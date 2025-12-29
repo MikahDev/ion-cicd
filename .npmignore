@@ -1,0 +1,38 @@
+# Source files (dist is published via files field)
+src/
+tsconfig.json
+
+# Development files
+.github/
+.vscode/
+.claude/
+*.config.js
+.eslintrc.json
+.prettierrc
+jest.config.js
+
+# Test files
+__tests__/
+*.test.ts
+*.spec.ts
+coverage/
+
+# Project-specific files (should not be in published package)
+ion-components/
+credentials/
+.ionapi
+*.ionapi
+ion-cicd.config.json
+env-mappings.json
+
+# State and logs
+.infor-cicd/
+*.log
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db

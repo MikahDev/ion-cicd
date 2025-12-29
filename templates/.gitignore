@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Credentials - NEVER commit
+credentials/*.ionapi
+*.ionapi
+
+# State files
+.infor-cicd/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Build output
+dist/

@@ -1,0 +1,24 @@
+# Daily Backup Workflow
+# Copy this file to your project's .github/workflows/ directory
+
+name: Daily Backup
+
+on:
+  schedule:
+    # Run daily at 2:00 AM UTC (adjust to your timezone)
+    - cron: '0 2 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  backup:
+    uses: mikah/ion-cicd/.github/workflows/reusable/backup.yml@v1
+    with:
+      environment: prd
+      target-branch: Production
+      # Optional: customize these
+      # components-path: ion-components
+      # auto-merge: true
+    secrets:
+      IONAPI_CONFIG: ${{ secrets.IONAPI_CONFIG_PRD }}
