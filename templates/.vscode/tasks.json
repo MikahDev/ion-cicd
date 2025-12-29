@@ -2,6 +2,43 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Deploy to ION",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "if [[ \"${file}\" == *\"Document flow\"* ]]; then npx ion-cicd deploy --file \"${file}\" --with-dependencies --sync-dependencies; else npx ion-cicd deploy --file \"${file}\"; fi"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Deploy to ION (Dry Run)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "if [[ \"${file}\" == *\"Document flow\"* ]]; then npx ion-cicd deploy --file \"${file}\" --with-dependencies --sync-dependencies --dry-run; else npx ion-cicd deploy --file \"${file}\" --dry-run; fi"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "focus": true
+      },
+      "group": "build"
+    },
+    {
       "label": "Export All (Local)",
       "type": "shell",
       "command": "npx ion-cicd export --all --local",
@@ -13,20 +50,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Export All from Environment",
+      "label": "Export from Environment",
       "type": "shell",
       "command": "npx ion-cicd --env ${input:environment} export --all --local",
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy to Environment",
-      "type": "shell",
-      "command": "npx ion-cicd --env ${input:environment} deploy",
       "group": "build",
       "presentation": {
         "reveal": "always",
