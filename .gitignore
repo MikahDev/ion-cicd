@@ -40,3 +40,4 @@ npm-debug.log*
 tmp/
 temp/
 *.tmp
+dist/
