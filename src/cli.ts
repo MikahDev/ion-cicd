@@ -38,7 +38,7 @@ function formatError(error: unknown): string {
 }
 
 // Package info
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const DESCRIPTION = 'Infor ION CI/CD Toolkit - Automated backup and deployment for ION components';
 
 /**
