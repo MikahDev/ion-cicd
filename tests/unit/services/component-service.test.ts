@@ -26,6 +26,7 @@ describe('ComponentService', () => {
       createComponent: jest.fn(),
       updateComponent: jest.fn(),
       deleteComponent: jest.fn(),
+      componentExists: jest.fn(),
     } as unknown as jest.Mocked<IONClient>;
 
     mockGitHubClient = {
@@ -120,20 +121,35 @@ describe('ComponentService', () => {
       expect(result.mappingModels?.[1].mapperName).toBe('NewMapping');
     });
 
-    it('should only keep name and description for enterprise connectors', () => {
+    it('should preserve config fields but remove system fields for enterprise connectors', () => {
       const connector: IONComponentDetail = {
         name: 'MyConnector',
         description: 'Test connector',
-        otherField: 'should be removed',
+        configField: 'should be preserved',
         complexData: { nested: 'data' },
+        // System-managed fields that should be removed
+        createdBy: 'system',
+        createdDate: '2024-01-01',
+        modifiedBy: 'system',
+        modifiedDate: '2024-01-02',
+        id: '12345',
+        version: 1,
       };
 
       const result = service.prepareForImport(ComponentType.ENTERPRISE_LOCATIONS, connector);
 
+      // Config fields should be preserved
       expect(result.name).toBe('MyConnector');
       expect(result.description).toBe('Test connector');
-      expect(result).not.toHaveProperty('otherField');
-      expect(result).not.toHaveProperty('complexData');
+      expect(result).toHaveProperty('configField', 'should be preserved');
+      expect(result).toHaveProperty('complexData');
+      // System fields should be removed
+      expect(result).not.toHaveProperty('createdBy');
+      expect(result).not.toHaveProperty('createdDate');
+      expect(result).not.toHaveProperty('modifiedBy');
+      expect(result).not.toHaveProperty('modifiedDate');
+      expect(result).not.toHaveProperty('id');
+      expect(result).not.toHaveProperty('version');
     });
 
     it('should preserve all fields for regular components', () => {
@@ -164,27 +180,29 @@ describe('ComponentService', () => {
 
   describe('componentExists', () => {
     it('should return true when component exists', async () => {
-      mockIONClient.getComponent.mockResolvedValue({ name: 'ExistingFlow' });
+      mockIONClient.componentExists.mockResolvedValue(true);
 
       const result = await service.componentExists(ComponentType.DATAFLOWS, 'ExistingFlow');
 
       expect(result).toBe(true);
+      expect(mockIONClient.componentExists).toHaveBeenCalledWith(ComponentType.DATAFLOWS, 'ExistingFlow');
     });
 
     it('should return false when component does not exist', async () => {
-      mockIONClient.getComponent.mockRejectedValue(new Error('Not found'));
+      mockIONClient.componentExists.mockResolvedValue(false);
 
       const result = await service.componentExists(ComponentType.DATAFLOWS, 'NonExistent');
 
       expect(result).toBe(false);
+      expect(mockIONClient.componentExists).toHaveBeenCalledWith(ComponentType.DATAFLOWS, 'NonExistent');
     });
   });
 
   describe('generateUniqueName', () => {
     it('should generate unique name with suffix', async () => {
-      mockIONClient.getComponent
-        .mockResolvedValueOnce({ name: 'Flow_1' }) // First attempt exists
-        .mockRejectedValueOnce(new Error('Not found')); // Second attempt doesn't exist
+      mockIONClient.componentExists
+        .mockResolvedValueOnce(true) // Flow_1 exists
+        .mockResolvedValueOnce(false); // Flow_2 doesn't exist
 
       const result = await service.generateUniqueName(ComponentType.DATAFLOWS, 'Flow');
 
@@ -192,7 +210,7 @@ describe('ComponentService', () => {
     });
 
     it('should return first suffix if base name not taken', async () => {
-      mockIONClient.getComponent.mockRejectedValue(new Error('Not found'));
+      mockIONClient.componentExists.mockResolvedValue(false);
 
       const result = await service.generateUniqueName(ComponentType.DATAFLOWS, 'NewFlow');
 
@@ -207,7 +225,7 @@ describe('ComponentService', () => {
     };
 
     it('should create new component when it does not exist', async () => {
-      mockIONClient.getComponent.mockRejectedValue(new Error('Not found'));
+      mockIONClient.componentExists.mockResolvedValue(false);
       mockIONClient.createComponent.mockResolvedValue(undefined);
 
       const result = await service.importComponent(
@@ -222,7 +240,7 @@ describe('ComponentService', () => {
     });
 
     it('should skip when component exists and onConflict is skip', async () => {
-      mockIONClient.getComponent.mockResolvedValue({ name: 'TestFlow' });
+      mockIONClient.componentExists.mockResolvedValue(true);
 
       const result = await service.importComponent(
         ComponentType.DATAFLOWS,
@@ -235,7 +253,7 @@ describe('ComponentService', () => {
     });
 
     it('should fail when component exists and onConflict is fail', async () => {
-      mockIONClient.getComponent.mockResolvedValue({ name: 'TestFlow' });
+      mockIONClient.componentExists.mockResolvedValue(true);
 
       const result = await service.importComponent(
         ComponentType.DATAFLOWS,
@@ -249,10 +267,10 @@ describe('ComponentService', () => {
     });
 
     it('should rename when component exists and onConflict is rename', async () => {
-      // First call for existence check returns existing
-      mockIONClient.getComponent
-        .mockResolvedValueOnce({ name: 'TestFlow' }) // exists
-        .mockRejectedValueOnce(new Error('Not found')); // TestFlow_1 doesn't exist
+      // First call: TestFlow exists; Second call: TestFlow_1 doesn't exist
+      mockIONClient.componentExists
+        .mockResolvedValueOnce(true) // TestFlow exists
+        .mockResolvedValueOnce(false); // TestFlow_1 doesn't exist
       mockIONClient.createComponent.mockResolvedValue(undefined);
 
       const result = await service.importComponent(
@@ -271,13 +289,18 @@ describe('ComponentService', () => {
     it('should return types in dependency order', () => {
       const order = service.getImportOrder();
 
-      expect(order[0]).toBe(ComponentType.CONNECTION_POINTS);
-      expect(order[1]).toBe(ComponentType.FILE_TEMPLATES);
-      expect(order[2]).toBe(ComponentType.ENTERPRISE_LOCATIONS);
-      expect(order[3]).toBe(ComponentType.MAPPINGS);
-      expect(order[4]).toBe(ComponentType.DATAFLOWS);
-      expect(order[5]).toBe(ComponentType.WORKFLOWS);
-      expect(order[6]).toBe(ComponentType.ACTIVATION_POLICIES);
+      // Order follows dependency chain: schemas first, then components that depend on them
+      expect(order[0]).toBe(ComponentType.BOD_SCHEMAS);
+      expect(order[1]).toBe(ComponentType.OBJECT_SCHEMAS);
+      expect(order[2]).toBe(ComponentType.LIBRARIES);
+      expect(order[3]).toBe(ComponentType.CONNECTION_POINTS);
+      expect(order[4]).toBe(ComponentType.FILE_TEMPLATES);
+      expect(order[5]).toBe(ComponentType.ENTERPRISE_LOCATIONS);
+      expect(order[6]).toBe(ComponentType.SCRIPTS);
+      expect(order[7]).toBe(ComponentType.MAPPINGS);
+      expect(order[8]).toBe(ComponentType.DATAFLOWS);
+      expect(order[9]).toBe(ComponentType.WORKFLOWS);
+      expect(order[10]).toBe(ComponentType.ACTIVATION_POLICIES);
     });
   });
 
@@ -375,7 +398,7 @@ describe('ComponentService', () => {
         }
         return JSON.stringify({ name: 'Flow1', description: 'Dataflow' });
       });
-      mockIONClient.getComponent.mockRejectedValue(new Error('Not found'));
+      mockIONClient.componentExists.mockResolvedValue(false);
       mockIONClient.createComponent.mockResolvedValue(undefined);
 
       const result = await service.importFromGitHub({
@@ -407,7 +430,7 @@ describe('ComponentService', () => {
       mockGitHubClient.getFileContent.mockResolvedValue(
         JSON.stringify({ name: 'Flow1', description: 'Test' })
       );
-      mockIONClient.getComponent.mockResolvedValue({ name: 'Flow1' }); // Already exists
+      mockIONClient.componentExists.mockResolvedValue(true); // Already exists
 
       const result = await service.importFromGitHub({
         repo: 'test-repo',

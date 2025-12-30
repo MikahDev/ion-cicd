@@ -152,6 +152,35 @@ describe('IONClient', () => {
     });
   });
 
+  describe('componentExists', () => {
+    beforeEach(async () => {
+      mockAxios.onPost('https://sso.example.com/token.oauth2').reply(200, {
+        access_token: 'test-token',
+        expires_in: 7200,
+      });
+    });
+
+    it('should return true when component exists', async () => {
+      mockAxios
+        .onGet('https://api.example.com/TEST_TENANT/IONSERVICES/connect/model/v1/dataflows/TestFlow')
+        .reply(200, { name: 'TestFlow' });
+
+      const result = await client.componentExists(ComponentType.DATAFLOWS, 'TestFlow');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when component does not exist (404)', async () => {
+      mockAxios
+        .onGet('https://api.example.com/TEST_TENANT/IONSERVICES/connect/model/v1/dataflows/NonExistent')
+        .reply(404, { error: 'Not found' });
+
+      const result = await client.componentExists(ComponentType.DATAFLOWS, 'NonExistent');
+
+      expect(result).toBe(false);
+    });
+  });
+
   describe('createComponent', () => {
     beforeEach(async () => {
       mockAxios.onPost('https://sso.example.com/token.oauth2').reply(200, {

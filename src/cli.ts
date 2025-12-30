@@ -20,8 +20,22 @@ import { executeCompare, CompareCommandOptions } from './commands/compare.js';
 import { executePush, PushCommandOptions } from './commands/push.js';
 import { ConflictResolution } from './services/component-service.js';
 import { ConfigLoader } from './config/loader.js';
+import { IONCICDError } from './utils/errors.js';
 
 const logger = new Logger('CLI');
+
+/**
+ * Formats an error for user-friendly display
+ * @param error - The error to format
+ * @returns Formatted error string with code and retry hint
+ */
+function formatError(error: unknown): string {
+  if (error instanceof IONCICDError) {
+    const retryHint = error.retryable ? ' (retryable)' : '';
+    return `[${error.code}] ${error.message}${retryHint}`;
+  }
+  return error instanceof Error ? error.message : String(error);
+}
 
 // Package info
 const VERSION = '1.0.0';
@@ -90,7 +104,7 @@ function createProgram(): Command {
       try {
         await executeExport(exportOptions);
       } catch (error) {
-        logger.error('Export failed', { error: String(error) });
+        logger.error('Export failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -136,7 +150,7 @@ function createProgram(): Command {
       try {
         await executeImport(importOptions);
       } catch (error) {
-        logger.error('Import failed', { error: String(error) });
+        logger.error('Import failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -185,7 +199,7 @@ function createProgram(): Command {
       try {
         await executeSync(syncOptions);
       } catch (error) {
-        logger.error('Sync failed', { error: String(error) });
+        logger.error('Sync failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -231,7 +245,7 @@ function createProgram(): Command {
       try {
         await executeRollback(rollbackOptions);
       } catch (error) {
-        logger.error('Rollback failed', { error: String(error) });
+        logger.error('Rollback failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -287,7 +301,7 @@ function createProgram(): Command {
       try {
         await executeDeploy(deployOptions);
       } catch (error) {
-        logger.error('Deploy failed', { error: String(error) });
+        logger.error('Deploy failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -314,7 +328,7 @@ function createProgram(): Command {
       try {
         await executePush(pushOptions);
       } catch (error) {
-        logger.error('Push failed', { error: String(error) });
+        logger.error('Push failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -343,7 +357,7 @@ function createProgram(): Command {
       try {
         await executeValidate(validateOptions);
       } catch (error) {
-        logger.error('Validation failed', { error: String(error) });
+        logger.error('Validation failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -379,7 +393,7 @@ function createProgram(): Command {
       try {
         await executeRefresh(refreshOptions);
       } catch (error) {
-        logger.error('Refresh failed', { error: String(error) });
+        logger.error('Refresh failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -403,7 +417,7 @@ function createProgram(): Command {
       try {
         await executeAnalyze(analyzeOptions);
       } catch (error) {
-        logger.error('Analyze failed', { error: String(error) });
+        logger.error('Analyze failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -431,7 +445,7 @@ function createProgram(): Command {
       try {
         await executeCompare(compareOptions);
       } catch (error) {
-        logger.error('Compare failed', { error: String(error) });
+        logger.error('Compare failed', { error: formatError(error) });
         process.exit(1);
       }
     });
@@ -477,9 +491,9 @@ function createProgram(): Command {
         // eslint-disable-next-line no-console
         console.log(`  GitHub repos accessible: ${repos.length}`);
       } catch (error) {
-        logger.error('Authentication test failed', { error: String(error) });
+        logger.error('Authentication test failed', { error: formatError(error) });
         // eslint-disable-next-line no-console
-        console.error('\n✗ Authentication failed:', String(error));
+        console.error('\n✗ Authentication failed:', formatError(error));
         process.exit(1);
       }
     });
@@ -544,7 +558,7 @@ function createProgram(): Command {
           console.log(`\nTotal: ${total} components`);
         }
       } catch (error) {
-        logger.error('Failed to list components', { error: String(error) });
+        logger.error('Failed to list components', { error: formatError(error) });
         process.exit(1);
       }
     });
