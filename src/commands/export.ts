@@ -14,6 +14,7 @@ import { CLIOutput, ExportResult, BatchResult } from '../types/result.js';
 import { Logger } from '../utils/logger.js';
 import { selectComponentTypes, selectComponents, confirmOperation } from '../interactive/prompts.js';
 import { ConfigLoader, ResolvedConfig } from '../config/loader.js';
+import { htmlToMarkdown } from '../utils/markdown.js';
 
 const logger = new Logger('ExportCommand');
 
@@ -33,17 +34,18 @@ async function exportScriptFiles(
 ): Promise<void> {
   const pyFilePath = join(typeFolder, `${script.name}.py`);
   const metaFilePath = join(typeFolder, `${script.name}.meta.json`);
+  const mdFilePath = join(typeFolder, `${script.name}.md`);
 
   // Extract Python code and normalize line endings
   const pythonCode = (script.scriptCode || '')
     .replace(/\r\n/g, '\n')  // Windows -> Unix
     .replace(/\r/g, '\n');   // Old Mac -> Unix
 
-  // Create metadata without the scriptCode
+  // Create metadata without the scriptCode and documentation
+  // Documentation is stored separately in .md file
   const metadata = {
     name: script.name,
     description: script.description || '',
-    documentation: script.documentation || '',
     versionNumber: script.versionNumber,
     status: script.status,
     inputVariables: script.inputVariables || [],
@@ -51,11 +53,19 @@ async function exportScriptFiles(
     usedLibraries: script.usedLibraries || [],
   };
 
+  // Convert HTML documentation to Markdown
+  const documentation = script.documentation || '';
+  const markdownDoc = htmlToMarkdown(documentation);
+
   if (!dryRun) {
     // Write Python file
     await writeFile(pyFilePath, pythonCode, 'utf-8');
-    // Write metadata JSON
+    // Write metadata JSON (without documentation)
     await writeFile(metaFilePath, JSON.stringify(metadata, null, 2), 'utf-8');
+    // Write Markdown documentation file if there is documentation
+    if (markdownDoc) {
+      await writeFile(mdFilePath, markdownDoc, 'utf-8');
+    }
   }
 }
 
@@ -182,6 +192,7 @@ async function pruneOrphanedFiles(
         if (file.endsWith('.py')) {
           componentName = basename(file, '.py');
           const metaFile = `${componentName}.meta.json`;
+          const mdFile = `${componentName}.md`;
 
           if (!exportedNames.has(componentName)) {
             filesToDelete = [file];
@@ -189,9 +200,13 @@ async function pruneOrphanedFiles(
             if (files.includes(metaFile)) {
               filesToDelete.push(metaFile);
             }
+            // Also delete the .md documentation file if it exists
+            if (files.includes(mdFile)) {
+              filesToDelete.push(mdFile);
+            }
           }
-        } else if (file.endsWith('.meta.json')) {
-          // Skip .meta.json files - they're handled with .py files
+        } else if (file.endsWith('.meta.json') || file.endsWith('.md')) {
+          // Skip .meta.json and .md files - they're handled with .py files
           continue;
         } else {
           continue;

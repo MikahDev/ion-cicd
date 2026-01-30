@@ -22,6 +22,7 @@ import {
   DataflowValidationResult,
   STANDARD_NOUNS,
 } from '../services/dataflow-validator.js';
+import { markdownToHtml } from '../utils/markdown.js';
 
 const logger = new Logger('DeployCommand');
 
@@ -251,13 +252,15 @@ function parseFilePath(filePath: string, componentsPath: string): DeployItem | n
   // Extract component name from filename
   let name: string;
   if (type === ComponentType.SCRIPTS) {
-    // Scripts can be .py or .meta.json - we use .py as the primary file
+    // Scripts can be .py, .meta.json, or .md - we use .py as the primary file
     if (fileName.endsWith('.py')) {
       name = basename(fileName, '.py');
     } else if (fileName.endsWith('.meta.json')) {
       name = basename(fileName, '.meta.json');
+    } else if (fileName.endsWith('.md')) {
+      name = basename(fileName, '.md');
     } else {
-      logger.error('Script files must have .py or .meta.json extension', { fileName });
+      logger.error('Script files must have .py, .meta.json, or .md extension', { fileName });
       return null;
     }
     // Always return the .py file path
@@ -301,7 +304,7 @@ function parseFilePath(filePath: string, componentsPath: string): DeployItem | n
 }
 
 /**
- * Reads a script from .py + .meta.json files and combines into ScriptComponent
+ * Reads a script from .py + .meta.json + optional .md files and combines into ScriptComponent
  * @param pyPath - Path to the .py file
  * @param metaPath - Path to the .meta.json file
  * @returns Combined ScriptComponent
@@ -311,9 +314,21 @@ async function readScriptFiles(pyPath: string, metaPath: string): Promise<Script
   const metaContent = await readFile(metaPath, 'utf-8');
   const metadata = JSON.parse(metaContent);
 
+  // Check for .md documentation file
+  const mdPath = pyPath.replace(/\.py$/, '.md');
+  let documentation = metadata.documentation || '';
+
+  if (existsSync(mdPath)) {
+    const markdownContent = await readFile(mdPath, 'utf-8');
+    if (markdownContent.trim()) {
+      documentation = markdownToHtml(markdownContent);
+    }
+  }
+
   return {
     ...metadata,
     scriptCode,
+    documentation,
   } as ScriptComponent;
 }
 

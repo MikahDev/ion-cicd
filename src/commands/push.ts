@@ -12,6 +12,7 @@ import { ComponentService } from '../services/component-service.js';
 import { ComponentType, COMPONENT_DISPLAY_NAMES, IMPORT_ORDER } from '../types/index.js';
 import { confirmOperation } from '../interactive/prompts.js';
 import { ConfigLoader } from '../config/loader.js';
+import { markdownToHtml } from '../utils/markdown.js';
 
 /**
  * Push command options from CLI
@@ -137,14 +138,24 @@ async function readComponentData(
   basePath: string
 ): Promise<Record<string, unknown>> {
   if (component.type === ComponentType.SCRIPTS) {
-    // Scripts: combine .py and .meta.json
+    // Scripts: combine .py, .meta.json, and optional .md
     const metaPath = join(basePath, 'Script', `${component.name}.meta.json`);
     const pyPath = component.path;
+    const mdPath = join(basePath, 'Script', `${component.name}.md`);
 
     const metadata = JSON.parse(await readFile(metaPath, 'utf-8'));
     const scriptCode = await readFile(pyPath, 'utf-8');
 
-    return { ...metadata, scriptCode };
+    // Check for .md documentation file
+    let documentation = metadata.documentation || '';
+    if (existsSync(mdPath)) {
+      const markdownContent = await readFile(mdPath, 'utf-8');
+      if (markdownContent.trim()) {
+        documentation = markdownToHtml(markdownContent);
+      }
+    }
+
+    return { ...metadata, scriptCode, documentation };
   } else if (component.type === ComponentType.BOD_SCHEMAS) {
     // BOD schemas: combine .xsd and .xml
     const xsdPath = component.path;
