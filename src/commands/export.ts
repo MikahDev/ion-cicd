@@ -9,7 +9,7 @@ import { join, basename } from 'path';
 import { IONClient } from '../clients/ion-client.js';
 import { GitHubClient } from '../clients/github-client.js';
 import { ComponentService, ExportOptions } from '../services/component-service.js';
-import { ComponentType, COMPONENT_DISPLAY_NAMES, ScriptComponent, BODSchemaComponent } from '../types/index.js';
+import { ComponentType, COMPONENT_DISPLAY_NAMES, ScriptComponent, BODSchemaComponent, LibraryComponent } from '../types/index.js';
 import { CLIOutput, ExportResult, BatchResult } from '../types/result.js';
 import { Logger } from '../utils/logger.js';
 import { selectComponentTypes, selectComponents, confirmOperation } from '../interactive/prompts.js';
@@ -95,6 +95,77 @@ async function exportBODSchemaFiles(
     if (bodSchema.nounMetadataXml) {
       await writeFile(xmlFilePath, bodSchema.nounMetadataXml, 'utf-8');
     }
+  }
+}
+
+/**
+ * Exports a library in developer-friendly format:
+ * - libraryName.py - The extracted Python source code (editable)
+ * - libraryName.meta.json - Metadata (name, version, description, etc.)
+ *
+ * The wheel is rebuilt from source on deploy, so we don't need to store it.
+ *
+ * @param library - Library component data
+ * @param typeFolder - Folder to write files to
+ * @param dryRun - Whether this is a dry run
+ */
+async function exportLibraryFiles(
+  library: LibraryComponent,
+  typeFolder: string,
+  dryRun: boolean
+): Promise<void> {
+  const pyFilePath = join(typeFolder, `${library.name}.py`);
+  const metaFilePath = join(typeFolder, `${library.name}.meta.json`);
+
+  // Decode base64 to binary wheel
+  const whlBinary = library.file ? Buffer.from(library.file, 'base64') : Buffer.alloc(0);
+
+  // Extract Python source code from the wheel (which is a ZIP file)
+  let pythonSource = '';
+  if (whlBinary.length > 0) {
+    try {
+      const AdmZip = (await import('adm-zip')).default;
+      const zip = new AdmZip(whlBinary);
+      const entries = zip.getEntries();
+
+      // Look for the main .py file (same name as library)
+      const mainPyFile = entries.find(e =>
+        e.entryName === `${library.name}.py` ||
+        e.entryName.endsWith(`/${library.name}.py`)
+      );
+
+      if (mainPyFile) {
+        pythonSource = mainPyFile.getData().toString('utf-8');
+      } else {
+        // Fall back to any .py file that's not in dist-info
+        const anyPyFile = entries.find(e =>
+          e.entryName.endsWith('.py') && !e.entryName.includes('dist-info')
+        );
+        if (anyPyFile) {
+          pythonSource = anyPyFile.getData().toString('utf-8');
+        }
+      }
+    } catch {
+      logger.warn('Could not extract Python source from wheel', { name: library.name });
+    }
+  }
+
+  // Create metadata without the file content
+  const metadata = {
+    name: library.name,
+    description: library.description || '',
+    version: library.version || '',
+    fileName: library.fileName || `${library.name}.whl`,
+    libraryInformation: (library as Record<string, unknown>).libraryInformation || {},
+  };
+
+  if (!dryRun) {
+    // Write extracted Python source (editable)
+    if (pythonSource) {
+      await writeFile(pyFilePath, pythonSource, 'utf-8');
+    }
+    // Write metadata JSON
+    await writeFile(metaFilePath, JSON.stringify(metadata, null, 2), 'utf-8');
   }
 }
 
@@ -227,6 +298,43 @@ async function pruneOrphanedFiles(
         } else if (file.endsWith('.xml')) {
           // Skip .xml files - they're handled with .xsd files
           continue;
+        } else {
+          continue;
+        }
+      } else if (type === ComponentType.LIBRARIES) {
+        // Libraries: check .py files (primary), also delete .meta.json
+        // Also handle legacy .json and .whl files
+        if (file.endsWith('.py')) {
+          componentName = basename(file, '.py');
+          const metaFile = `${componentName}.meta.json`;
+          const legacyJsonFile = `${componentName}.json`;
+          const legacyWhlFile = `${componentName}.whl`;
+
+          if (!exportedNames.has(componentName)) {
+            filesToDelete = [file];
+            // Also delete the meta file if it exists
+            if (files.includes(metaFile)) {
+              filesToDelete.push(metaFile);
+            }
+            // Also delete legacy files if they exist
+            if (files.includes(legacyJsonFile)) {
+              filesToDelete.push(legacyJsonFile);
+            }
+            if (files.includes(legacyWhlFile)) {
+              filesToDelete.push(legacyWhlFile);
+            }
+          }
+        } else if (file.endsWith('.meta.json')) {
+          // Skip .meta.json files - they're handled with .py files
+          continue;
+        } else if (file.endsWith('.json') || file.endsWith('.whl')) {
+          // Legacy formats: standalone .json or .whl files
+          const ext = file.endsWith('.json') ? '.json' : '.whl';
+          componentName = basename(file, ext);
+          // Only delete if not already handled by .py file
+          if (!exportedNames.has(componentName) && !files.includes(`${componentName}.py`)) {
+            filesToDelete = [file];
+          }
         } else {
           continue;
         }
@@ -391,6 +499,10 @@ async function exportToLocal(
           // BOD Schemas: .xsd + .xml files
           await exportBODSchemaFiles(detail as BODSchemaComponent, typeFolder, dryRun);
           logger.info(`Exported: ${itemKey} (.xsd + .xml)`);
+        } else if (type === ComponentType.LIBRARIES) {
+          // Libraries: .py (binary) + .meta.json files
+          await exportLibraryFiles(detail as LibraryComponent, typeFolder, dryRun);
+          logger.info(`Exported: ${itemKey} (.py + .meta.json)`);
         } else {
           // Write standard JSON for other component types
           const json = JSON.stringify(detail, null, 2);

@@ -77,6 +77,9 @@ async function discoverLocalComponents(
 
     const files = await readdir(folderPath);
 
+    // Track discovered names to avoid duplicates
+    const discoveredNames = new Set<string>();
+
     for (const file of files) {
       const filePath = join(folderPath, file);
 
@@ -103,6 +106,18 @@ async function discoverLocalComponents(
             displayType: COMPONENT_DISPLAY_NAMES[type],
           });
         }
+      } else if (type === ComponentType.LIBRARIES) {
+        // Libraries: prefer .py files (new format - rebuild wheel from source), fall back to .json (legacy)
+        if (file.endsWith('.py')) {
+          const name = file.replace('.py', '');
+          discoveredNames.add(name);
+          components.push({
+            type,
+            name,
+            path: filePath,
+            displayType: COMPONENT_DISPLAY_NAMES[type],
+          });
+        }
       } else if (file.endsWith('.json')) {
         // All other types: .json files
         const name = file.replace('.json', '');
@@ -112,6 +127,23 @@ async function discoverLocalComponents(
           path: filePath,
           displayType: COMPONENT_DISPLAY_NAMES[type],
         });
+      }
+    }
+
+    // For Libraries, also discover legacy .json files not already found as .py
+    if (type === ComponentType.LIBRARIES) {
+      for (const file of files) {
+        if (file.endsWith('.json') && !file.endsWith('.meta.json')) {
+          const name = file.replace('.json', '');
+          if (!discoveredNames.has(name)) {
+            components.push({
+              type,
+              name,
+              path: join(folderPath, file),
+              displayType: COMPONENT_DISPLAY_NAMES[type],
+            });
+          }
+        }
       }
     }
   }
@@ -165,8 +197,60 @@ async function readComponentData(
     const nounMetadataXml = existsSync(xmlPath) ? await readFile(xmlPath, 'utf-8') : '';
 
     return { name: component.name, nounSchemaXsd, nounMetadataXml };
+  } else if (component.type === ComponentType.LIBRARIES && component.path.endsWith('.py')) {
+    // Libraries (new format): rebuild wheel from .py source + .meta.json
+    const pyPath = component.path;
+    const metaPath = join(basePath, 'Library', `${component.name}.meta.json`);
+
+    const pythonSource = await readFile(pyPath, 'utf-8');
+    const metadata = JSON.parse(await readFile(metaPath, 'utf-8'));
+
+    // Rebuild the wheel from source
+    const AdmZip = (await import('adm-zip')).default;
+    const zip = new AdmZip();
+
+    const name = metadata.name as string;
+    const version = metadata.version as string || '1.0.0';
+    const distInfoDir = `${name}-${version}.dist-info`;
+
+    // Add the Python source file
+    zip.addFile(`${name}.py`, Buffer.from(pythonSource, 'utf-8'));
+
+    // Create METADATA file
+    const metadataContent = [
+      'Metadata-Version: 2.1',
+      `Name: ${name}`,
+      `Version: ${version}`,
+    ].join('\n');
+    zip.addFile(`${distInfoDir}/METADATA`, Buffer.from(metadataContent, 'utf-8'));
+
+    // Create WHEEL file
+    const wheelContent = [
+      'Wheel-Version: 1.0',
+      'Generator: ion-cicd',
+      'Root-Is-Purelib: true',
+      'Tag: py3-none-any',
+    ].join('\n');
+    zip.addFile(`${distInfoDir}/WHEEL`, Buffer.from(wheelContent, 'utf-8'));
+
+    // Create top_level.txt
+    zip.addFile(`${distInfoDir}/top_level.txt`, Buffer.from(name, 'utf-8'));
+
+    // Create RECORD
+    const recordContent = [
+      `${name}.py,,`,
+      `${distInfoDir}/METADATA,,`,
+      `${distInfoDir}/WHEEL,,`,
+      `${distInfoDir}/top_level.txt,,`,
+      `${distInfoDir}/RECORD,,`,
+    ].join('\n');
+    zip.addFile(`${distInfoDir}/RECORD`, Buffer.from(recordContent, 'utf-8'));
+
+    const base64File = zip.toBuffer().toString('base64');
+
+    return { ...metadata, file: base64File };
   } else {
-    // Standard JSON components
+    // Standard JSON components (including legacy Library .json)
     return JSON.parse(await readFile(component.path, 'utf-8'));
   }
 }

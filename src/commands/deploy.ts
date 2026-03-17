@@ -9,7 +9,7 @@ import { join, basename, dirname, resolve, relative } from 'path';
 import { execSync } from 'child_process';
 import { IONClient } from '../clients/ion-client.js';
 import { ComponentService, ConflictResolution } from '../services/component-service.js';
-import { IONApiConfig, ComponentType, COMPONENT_DISPLAY_NAMES, IMPORT_ORDER, ScriptComponent, BODSchemaComponent } from '../types/index.js';
+import { IONApiConfig, ComponentType, COMPONENT_DISPLAY_NAMES, IMPORT_ORDER, ScriptComponent, BODSchemaComponent, LibraryComponent } from '../types/index.js';
 import { IONComponentDetail } from '../types/ion.js';
 import { CLIOutput, ImportResult, BatchResult } from '../types/result.js';
 import { Logger } from '../utils/logger.js';
@@ -287,6 +287,34 @@ function parseFilePath(filePath: string, componentsPath: string): DeployItem | n
       displayType,
       path: join(absoluteComponentsPath, displayType, `${name}.xsd`),
     };
+  } else if (type === ComponentType.LIBRARIES) {
+    // Libraries can be .py, .whl, .meta.json, or legacy .json - we use .py as the primary file
+    if (fileName.endsWith('.py')) {
+      name = basename(fileName, '.py');
+    } else if (fileName.endsWith('.whl')) {
+      name = basename(fileName, '.whl');
+    } else if (fileName.endsWith('.meta.json')) {
+      name = basename(fileName, '.meta.json');
+    } else if (fileName.endsWith('.json')) {
+      // Legacy format - use .json directly
+      name = basename(fileName, '.json');
+      return {
+        name,
+        type,
+        displayType,
+        path: absolutePath,
+      };
+    } else {
+      logger.error('Library files must have .py, .whl, .meta.json, or .json extension', { fileName });
+      return null;
+    }
+    // Always return the .py file path for new format (we rebuild wheel from source)
+    return {
+      name,
+      type,
+      displayType,
+      path: join(absoluteComponentsPath, displayType, `${name}.py`),
+    };
   } else {
     // Other components use .json format
     if (!fileName.endsWith('.json')) {
@@ -349,6 +377,76 @@ async function readBODSchemaFiles(xsdPath: string, xmlPath: string, name: string
     nounSchemaXsd,
     nounMetadataXml,
   };
+}
+
+/**
+ * Builds a wheel from Python source code and metadata
+ * @param pythonSource - The Python source code
+ * @param metadata - Library metadata including name and version
+ * @returns Buffer containing the wheel ZIP file
+ */
+async function buildWheelFromSource(pythonSource: string, metadata: Record<string, unknown>): Promise<Buffer> {
+  const AdmZip = (await import('adm-zip')).default;
+  const zip = new AdmZip();
+
+  const name = metadata.name as string;
+  const version = metadata.version as string || '1.0.0';
+  const distInfoDir = `${name}-${version}.dist-info`;
+
+  // Add the Python source file
+  zip.addFile(`${name}.py`, Buffer.from(pythonSource, 'utf-8'));
+
+  // Create METADATA file
+  const metadataContent = [
+    'Metadata-Version: 2.1',
+    `Name: ${name}`,
+    `Version: ${version}`,
+  ].join('\n');
+  zip.addFile(`${distInfoDir}/METADATA`, Buffer.from(metadataContent, 'utf-8'));
+
+  // Create WHEEL file
+  const wheelContent = [
+    'Wheel-Version: 1.0',
+    'Generator: ion-cicd',
+    'Root-Is-Purelib: true',
+    'Tag: py3-none-any',
+  ].join('\n');
+  zip.addFile(`${distInfoDir}/WHEEL`, Buffer.from(wheelContent, 'utf-8'));
+
+  // Create top_level.txt
+  zip.addFile(`${distInfoDir}/top_level.txt`, Buffer.from(name, 'utf-8'));
+
+  // Create RECORD (checksums) - we'll use empty hashes as ION doesn't validate them
+  const recordContent = [
+    `${name}.py,,`,
+    `${distInfoDir}/METADATA,,`,
+    `${distInfoDir}/WHEEL,,`,
+    `${distInfoDir}/top_level.txt,,`,
+    `${distInfoDir}/RECORD,,`,
+  ].join('\n');
+  zip.addFile(`${distInfoDir}/RECORD`, Buffer.from(recordContent, 'utf-8'));
+
+  return zip.toBuffer();
+}
+
+/**
+ * Reads a library from .py + .meta.json files and rebuilds into LibraryComponent
+ * @param pyPath - Path to the .py file (Python source code)
+ * @param metaPath - Path to the .meta.json file
+ * @returns Combined LibraryComponent with base64-encoded wheel file
+ */
+async function readLibraryFiles(pyPath: string, metaPath: string): Promise<LibraryComponent> {
+  const pythonSource = await readFile(pyPath, 'utf-8');
+  const metadata = JSON.parse(await readFile(metaPath, 'utf-8'));
+
+  // Rebuild the wheel from source
+  const wheelBuffer = await buildWheelFromSource(pythonSource, metadata);
+  const base64File = wheelBuffer.toString('base64');
+
+  return {
+    ...metadata,
+    file: base64File,
+  } as LibraryComponent;
 }
 
 /**
@@ -445,6 +543,57 @@ async function discoverComponents(
           type,
           displayType: folder,
           path: join(folderPath, xsdFile), // Store .xsd path, we'll read .xml alongside
+        });
+      }
+    } else if (type === ComponentType.LIBRARIES) {
+      // Libraries use .py + .meta.json format (preferred) or legacy .json format
+      const pyFiles = files.filter((f) => f.endsWith('.py'));
+      const discoveredNames = new Set<string>();
+
+      // First, discover .py files (preferred format - we rebuild wheel from source)
+      for (const pyFile of pyFiles) {
+        const name = basename(pyFile, '.py');
+        const metaFile = `${name}.meta.json`;
+
+        // Check that both files exist
+        if (!files.includes(metaFile)) {
+          logger.warn('Library missing .meta.json file, skipping', { name });
+          continue;
+        }
+
+        // Filter by items if specified
+        if (items && !items.map((i) => i.toLowerCase()).includes(name.toLowerCase())) {
+          continue;
+        }
+
+        discoveredNames.add(name);
+        result.push({
+          name,
+          type,
+          displayType: folder,
+          path: join(folderPath, pyFile), // Store .py path, we'll read .meta.json alongside
+        });
+      }
+
+      // Then, discover legacy .json files (only if not already discovered as .py)
+      for (const file of files) {
+        if (!file.endsWith('.json') || file.endsWith('.meta.json')) continue;
+
+        const name = basename(file, '.json');
+
+        // Skip if already discovered as .py format
+        if (discoveredNames.has(name)) continue;
+
+        // Filter by items if specified
+        if (items && !items.map((i) => i.toLowerCase()).includes(name.toLowerCase())) {
+          continue;
+        }
+
+        result.push({
+          name,
+          type,
+          displayType: folder,
+          path: join(folderPath, file),
         });
       }
     } else {
@@ -725,6 +874,14 @@ export async function executeDeploy(options: DeployCommandOptions): Promise<void
       }
     }
 
+    // For Libraries with .py format, also check that .meta.json exists
+    if (item.type === ComponentType.LIBRARIES && item.path.endsWith('.py')) {
+      const metaPath = item.path.replace(/\.py$/, '.meta.json');
+      if (!existsSync(metaPath)) {
+        throw new Error(`Library metadata file not found: ${metaPath}`);
+      }
+    }
+
     deployItems = [item];
     logger.info('Deploying single file', { file: options.file, type: item.displayType, name: item.name });
   } else {
@@ -989,11 +1146,23 @@ export async function executeDeploy(options: DeployCommandOptions): Promise<void
     // Deploy libraries first (if selected)
     if (selectedDepTypes.includes('libraries')) {
     for (const [libName] of allLibraries) {
-      const libPath = join(componentsPath, 'Library', `${libName}.json`);
-      if (existsSync(libPath)) {
+      const libPyPath = join(componentsPath, 'Library', `${libName}.py`);
+      const libMetaPath = join(componentsPath, 'Library', `${libName}.meta.json`);
+      const libJsonPath = join(componentsPath, 'Library', `${libName}.json`);
+
+      // Prefer .py + .meta.json format (rebuild wheel from source), fall back to legacy .json
+      const useNewFormat = existsSync(libPyPath) && existsSync(libMetaPath);
+      const useLegacyFormat = !useNewFormat && existsSync(libJsonPath);
+
+      if (useNewFormat || useLegacyFormat) {
         try {
-          const content = await readFile(libPath, 'utf-8');
-          const libData = JSON.parse(content);
+          let libData: LibraryComponent;
+          if (useNewFormat) {
+            libData = await readLibraryFiles(libPyPath, libMetaPath);
+          } else {
+            const content = await readFile(libJsonPath, 'utf-8');
+            libData = JSON.parse(content);
+          }
           if (!options.dryRun) {
             const result = await service.importComponent(ComponentType.LIBRARIES, libData, 'update');
             if (result.status === 'failed') {
@@ -1445,11 +1614,23 @@ export async function executeDeploy(options: DeployCommandOptions): Promise<void
             console.log('  Libraries:');
           }
           for (const libName of missingLibraries) {
-            const libPath = join(componentsPath, 'Library', `${libName}.json`);
-            if (existsSync(libPath)) {
+            const libPyPath = join(componentsPath, 'Library', `${libName}.py`);
+            const libMetaPath = join(componentsPath, 'Library', `${libName}.meta.json`);
+            const libJsonPath = join(componentsPath, 'Library', `${libName}.json`);
+
+            // Prefer .py + .meta.json format (rebuild wheel from source), fall back to legacy .json
+            const useNewFormat = existsSync(libPyPath) && existsSync(libMetaPath);
+            const useLegacyFormat = !useNewFormat && existsSync(libJsonPath);
+
+            if (useNewFormat || useLegacyFormat) {
               try {
-                const content = await readFile(libPath, 'utf-8');
-                const libData = JSON.parse(content);
+                let libData: LibraryComponent;
+                if (useNewFormat) {
+                  libData = await readLibraryFiles(libPyPath, libMetaPath);
+                } else {
+                  const content = await readFile(libJsonPath, 'utf-8');
+                  libData = JSON.parse(content);
+                }
                 if (!options.dryRun) {
                   await service.importComponent(ComponentType.LIBRARIES, libData, 'update');
                 }
@@ -1754,8 +1935,13 @@ export async function executeDeploy(options: DeployCommandOptions): Promise<void
           const xsdPath = item.path;
           const xmlPath = item.path.replace(/\.xsd$/, '.xml');
           data = await readBODSchemaFiles(xsdPath, xmlPath, item.name);
+        } else if (type === ComponentType.LIBRARIES && item.path.endsWith('.py')) {
+          // Libraries use .py + .meta.json format (new format) - rebuild wheel from source
+          const pyPath = item.path;
+          const metaPath = item.path.replace(/\.py$/, '.meta.json');
+          data = await readLibraryFiles(pyPath, metaPath);
         } else {
-          // Standard JSON format for other components
+          // Standard JSON format for other components (including legacy Library .json)
           const content = await readFile(item.path, 'utf-8');
           data = JSON.parse(content) as IONComponentDetail;
         }

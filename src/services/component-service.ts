@@ -15,6 +15,7 @@ import {
   COMPONENT_CONFIG,
   IMPORT_ORDER,
 } from '../types/ion.js';
+import { IONApiError } from '../utils/errors.js';
 import { ExportResult, ImportResult, BatchResult } from '../types/result.js';
 import { Logger } from '../utils/logger.js';
 import { computeHash } from '../utils/crypto.js';
@@ -394,12 +395,35 @@ export class ComponentService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Failed to import component', { type, name: finalName, error: errorMessage });
 
+      // Extract detailed error message from ION API response
+      let detailedError = errorMessage;
+      if (error instanceof IONApiError && error.details) {
+        const details = error.details as Record<string, unknown>;
+        if (details.errors) {
+          detailedError = String(details.errors);
+        } else if (details.error) {
+          detailedError = String(details.error);
+        } else if (details.message) {
+          detailedError = String(details.message);
+        }
+      }
+
+      // Provide user-friendly error messages for common library issues
+      let userFriendlyError = detailedError;
+      if (type === ComponentType.LIBRARIES) {
+        if (detailedError.includes('already existing') || detailedError.includes('cannot overwrite')) {
+          userFriendlyError = `Library version already exists. Bump the "version" in .meta.json (and update "fileName" to match) to deploy changes.`;
+        } else if (detailedError.includes('Filename and library contents do not match') || detailedError.includes('name convention')) {
+          userFriendlyError = `Filename/version mismatch. Ensure "version" and "fileName" in .meta.json match (e.g., version "1.0.1" requires fileName "${finalName}-1.0.1-py3-none-any.whl").`;
+        }
+      }
+
       return {
         originalName,
         finalName,
         type: this.getDisplayName(type),
         status: 'failed',
-        error: errorMessage,
+        error: userFriendlyError,
       };
     }
   }
